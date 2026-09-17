@@ -11,7 +11,7 @@ npm install -g lokube
 npx lokube --help
 ```
 
-Requires Node.js >= 20 and a reachable Kubernetes cluster (via kubeconfig).
+Requires Node.js >= 22.12 and a reachable Kubernetes cluster (via kubeconfig).
 
 ## Usage
 

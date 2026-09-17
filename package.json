@@ -3,13 +3,35 @@
   "version": "1.0.0",
   "type": "module",
   "description": "CLI tool to test and run Kubernetes microservices locally with port-forwarded dependencies",
+  "keywords": [
+    "kubernetes",
+    "k8s",
+    "cli",
+    "port-forward",
+    "microservices",
+    "developer-tools",
+    "devtools",
+    "local-development"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "raw-phil"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raw-phil/lokube.git"
+  },
+  "homepage": "https://github.com/raw-phil/lokube",
+  "bugs": {
+    "url": "https://github.com/raw-phil/lokube/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "lokube": "./dist/index.js"
   },
-  "engines": {
-    "node": ">=20"
+"engines": {
+    "node": ">=22.12.0"
   },
   "files": [
     "dist"
