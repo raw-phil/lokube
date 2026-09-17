@@ -1,0 +1,79 @@
+# lokube example configuration
+# =============================
+# Copy this file into your project as `lokube.yaml` (or `lokube.yml`/`lokube.json`)
+# and adapt it to your microservices.
+#
+# lokube loads `lokube.yaml` (or `lokube.yml`/`lokube.json`) from the current
+# directory, or explicitly with `lokube -c <path> <command>`.
+
+# Optional: default Kubernetes namespace for port-forwards.
+# This is the namespace your services run in inside the cluster.
+namespace: dev
+
+# Optional: kubeconfig context to use (also settable via `--context <name>`).
+# context: dev-cluster
+
+# Optional: path to a kubeconfig file (also settable via `--kubeconfig <path>`).
+# Defaults to $KUBECONFIG or ~/.kube/config.
+# kubeconfig: ~/.kube/dev-config
+
+services:
+  # ---------------------------------------------------------------------------
+  # The microservice you want to run and test locally.
+  # `lokube run <name>` starts the local command and port-forwards every
+  # dependency declared under `dependencies`.
+  # ---------------------------------------------------------------------------
+  calendar-ms:
+    # Command lokube spawns locally (runs through a shell).
+    command: "npm run dev"
+
+    # Working directory for the command, relative to this config file.
+    dir: "./calendar-ms"
+
+    # Local port the service listens on (informational only; depends on your app).
+    localPort: 3000
+
+    # Cluster-side microservices this service talks to. lokube forwards each one
+    # to 127.0.0.1 via the Kubernetes API, so your local instance can reach them.
+    dependencies:
+      users-ms:
+        # Pick exactly ONE target kind for the forward:
+        #   deployment: <name>     → forwards the deployment's ready pod
+        #   service: <name>        → forwards a ready pod selected by the service
+        #   pod: <name>            → forwards a specific pod
+        #   podSelector: <labels>  → forwards the first ready pod matching labels
+        deployment: users-ms
+
+        # Container/cluster port to forward.
+        port: 8080
+
+        # Local port exposed on 127.0.0.1 (defaults to `port` when omitted).
+        localPort: 8100
+
+        # Optional: namespace override for THIS dependency.
+        # namespace: somenamespace
+
+      resources-ms:
+        deployment: resources-ms
+        port: 8080
+        localPort: 8200
+
+      auth-service:
+        service: auth-service
+        port: 50051
+
+      # You can forward pods by label selector instead of a deployment/service.
+      worker-pool:
+        podSelector: "app=worker,version=latest"
+        port: 3000
+        localPort: 8300
+
+  # ---------------------------------------------------------------------------
+  # A service with no local process: `lokube forward <name>` only opens the
+  # port-forwards (e.g. to run once, share tunnels, or use from another tool).
+  # ---------------------------------------------------------------------------
+  only-forward:
+    dependencies:
+      users-ms:
+        deployment: users-ms
+        port: 8080
