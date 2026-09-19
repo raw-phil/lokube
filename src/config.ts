@@ -114,10 +114,24 @@ function validateService(value: unknown, what: string, defaultNamespace: string)
     }
   }
 
+  const localPort = asPositiveInt(svc.localPort, `${what}.localPort`);
+  const dir = asString(svc.dir, `${what}.dir`);
+  const occupiedPorts = new Map<number, string>();
+  if (localPort !== undefined) occupiedPorts.set(localPort, `${what}.localPort`);
+  for (const dependency of dependencies) {
+    const previous = occupiedPorts.get(dependency.localPort);
+    if (previous) {
+      throw new ConfigError(
+        `local port ${dependency.localPort} is used by both "${previous}" and "${what}.dependencies.${dependency.key}.localPort"`,
+      );
+    }
+    occupiedPorts.set(dependency.localPort, `${what}.dependencies.${dependency.key}.localPort`);
+  }
+
   return {
     command: asString(svc.command, `${what}.command`),
-    dir: asString(svc.dir, `${what}.dir`),
-    localPort: asPositiveInt(svc.localPort, `${what}.localPort`),
+    dir,
+    localPort,
     dependencies,
   };
 }

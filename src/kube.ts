@@ -66,7 +66,7 @@ export class KubeForwarder {
         });
 
       } catch (error) {
-        log.error((error as Error).message);
+        log.error('Error during connection: ' + (error as Error).message);
         socket.destroy();
       }
     })

@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { KubeForwarder, type PortForwardHandle } from './kube.js';
@@ -9,6 +10,26 @@ export function getService(config: ResolvedConfig, service: string): ResolvedSer
   const svc = config.services[service];
   if (!svc) throw new Error(`unknown service "${service}". Available: ${Object.keys(config.services).join(', ') || '(none)'}`);
   return svc;
+}
+
+function resolveServiceDir(config: ResolvedConfig, service: string, dir?: string): string | undefined {
+  if (dir === undefined) return undefined;
+  if (dir.trim() === '') throw new Error(`service "${service}" has an empty "dir"`);
+
+  const cwd = resolve(dirname(config.path), dir);
+  let stats;
+  try {
+    stats = statSync(cwd);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    throw new Error(
+      code === 'ENOENT'
+        ? `service "${service}" "dir" does not exist: ${cwd}`
+        : `cannot access service "${service}" "dir" at ${cwd}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (!stats.isDirectory()) throw new Error(`service "${service}" "dir" is not a directory: ${cwd}`);
+  return cwd;
 }
 
 /** Show the kubeconfig context + forwarding plan and ask the user to confirm it. */
@@ -109,8 +130,8 @@ export async function runLocal(config: ResolvedConfig, service: string, opts: { 
   const svc = getService(config, service);
   if (!svc.command) throw new Error(`service "${service}" has no "command" configured to run locally`);
 
+  const cwd = resolveServiceDir(config, service, svc.dir);
   const handles = await forwardService(config, service, opts.yes);
-  const cwd = svc.dir ? resolve(dirname(config.path), svc.dir) : undefined;
   const env = opts.noEnv ? {} : buildEnv(svc.dependencies);
 
   log.info(`running "${svc.command}"${cwd ? ` in ${cwd}` : ''}`);
