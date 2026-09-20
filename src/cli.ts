@@ -4,8 +4,9 @@ import { join } from 'node:path';
 import { loadConfig } from './config.js';
 import { errMsg, log } from './logger.js';
 import { buildEnv, forwardOnly, getService, runLocal } from './run.js';
+import packageJson from "../package.json" with { type: "json" };
 
-export const VERSION = '1.0.0';
+export const VERSION = packageJson.version;
 
 const EXAMPLE_CONFIG = `# lokube configuration
 # Edit this file to describe the microservices you run locally and which
