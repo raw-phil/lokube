@@ -14,6 +14,7 @@ export class ConfigError extends Error {}
 
 const CONFIG_FILE_NAMES = ['lokube.yaml', 'lokube.yml', 'lokube.json'];
 const DEP_TARGET_KEYS = ['deployment', 'service', 'pod', 'podSelector'] as const;
+const ENV_PLACEHOLDERS = new Set(['HOST', 'PORT']);
 
 function describe(value: unknown): string {
   if (value === null) return 'null';
@@ -40,6 +41,24 @@ function asPositiveInt(value: unknown, what: string): number | undefined {
     throw new ConfigError(`"${what}" must be an integer between 1 and 65535, got ${describe(value)}`);
   }
   return n;
+}
+
+function validateEnv(value: unknown, what: string): Record<string, string> | undefined {
+  if (value === undefined) return undefined;
+  checkRecord(value, what);
+  const env: Record<string, string> = {};
+  for (const [name, template] of Object.entries(value)) {
+    if (typeof template !== 'string') {
+      throw new ConfigError(`"${what}.${name}" must be a string, got ${describe(template)}`);
+    }
+    for (const match of template.matchAll(/\{([^{}]+)\}/g)) {
+      if (!ENV_PLACEHOLDERS.has(match[1] as string)) {
+        throw new ConfigError(`"${what}.${name}" uses unknown placeholder "{${match[1]}}" (use {HOST} or {PORT})`);
+      }
+    }
+    env[name] = template;
+  }
+  return env;
 }
 
 function findConfigPath(explicit?: string): string {
@@ -114,6 +133,19 @@ function validateService(value: unknown, what: string, defaultNamespace: string)
     }
   }
 
+  const envNames = new Map<string, string>();
+  for (const dependency of dependencies) {
+    for (const name of Object.keys(dependency.env ?? {})) {
+      const previous = envNames.get(name);
+      if (previous) {
+        throw new ConfigError(
+          `environment variable "${name}" is configured by both "${previous}" and "${what}.dependencies.${dependency.key}.env.${name}"`,
+        );
+      }
+      envNames.set(name, `${what}.dependencies.${dependency.key}.env.${name}`);
+    }
+  }
+
   const localPort = asPositiveInt(svc.localPort, `${what}.localPort`);
   const dir = asString(svc.dir, `${what}.dir`);
   const occupiedPorts = new Map<number, string>();
@@ -169,5 +201,6 @@ function validateDependency(
     port,
     localPort: asPositiveInt(dep.localPort, `${what}.localPort`) ?? port,
     namespace: asString(dep.namespace, `${what}.namespace`) ?? defaultNamespace,
+    env: validateEnv(dep.env, `${what}.env`),
   };
 }

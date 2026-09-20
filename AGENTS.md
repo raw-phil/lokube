@@ -10,7 +10,7 @@ lokube list                       # show services + their dependency forwards (n
 lokube init                       # scaffold an lokube.yaml in the CWD
 lokube forward <service>          # only port-forward a service's dependencies
 lokube run <service>              # forward deps, then run the local command
-lokube env <service>              # print LK_* env vars a service's deps would inject
+lokube env <service>              # print configured env vars for a service's deps
 ```
 
 ## Commands
@@ -57,8 +57,9 @@ services:
         localPort: 8100         # optional, defaults to port
 ```
 Resolved deps default `localPort` to `port` and `namespace` to the top-level
-namespace. `LK_<KEY>_HOST/PORT` env vars are named from the dependency key
-(upper-cased, non-alnum → `_`).
+namespace. No environment variables are injected unless declared in a
+dependency's `env` mapping. `{HOST}` resolves to `127.0.0.1` and `{PORT}` to
+the dependency's local forwarded port.
 
 ## Gotchas (read before editing)
 
@@ -67,9 +68,6 @@ namespace. `LK_<KEY>_HOST/PORT` env vars are named from the dependency key
   forwarding plan, then prompt `[y/N]` before opening forwards; refusing aborts
   with exit 1. Non-interactive shells (no TTY) **must** pass `--yes` or lokube
   refuses to run. `--yes` skips the gate entirely. Don't remove this.
-- **Commander 15 `--no-env` quirk.** A lone `--no-<flag>` option always yields the
-  flag as `true` unless passed; read it as `opts.env === false`, never
-  `opts.env`. (See `cli.ts` `run` handler, `{ noEnv: opts.env === false }`.)
 - **Cleanup.** `forwardService` closes all handles on any dependency failure;
   `runLocal`/`forwardOnly` tear down on exit / SIGINT/SIGTERM. Never leave
   sockets or WebSockets dangling or the process won't exit.

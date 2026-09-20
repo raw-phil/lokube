@@ -33,6 +33,9 @@ export type DependencyConfig = {
   /** Namespace of the target; defaults to the top-level `namespace`.
    *  @example "dev" */
   namespace?: string;
+  /** Environment variables to inject; `{HOST}` and `{PORT}` use the local forward values.
+   *  @example { USERS_URL: "http://{HOST}:{PORT}" } */
+  env?: Record<string, string>;
 }
 
 /**
@@ -49,7 +52,7 @@ export type ServiceConfig = {
   /** Port the local service listens on (informational only).
    *  @example 3000 */
   localPort?: number;
-  /** Dependency name → forward definition; each key becomes an `LK_*` env var.
+  /** Dependency name → forward definition.
    *  @example { "users-ms": { deployment: "users-ms", port: 8080 } } */
   dependencies?: Record<string, DependencyConfig>;
 }
@@ -78,12 +81,13 @@ export type Config = {
  * `namespace` to the top-level one.
  */
 export type ResolvedDependency = {
-  /** Name the dependency is declared under (used in logs and env var names). */
+  /** Name the dependency is declared under (used in logs and configuration). */
   key: string;
   kind: DepTargetKind;
   /** Object name, or the label selector when `kind` is `podSelector`. */
   target: string;
-} & Required<Pick<DependencyConfig, 'port' | 'localPort' | 'namespace'>>;
+} & Required<Pick<DependencyConfig, 'port' | 'localPort' | 'namespace'>> &
+  Pick<DependencyConfig, 'env'>;
 
 /**
  * A service at runtime: `ServiceConfig` with its dependencies already resolved

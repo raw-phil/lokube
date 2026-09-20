@@ -28,6 +28,10 @@ services:
         deployment: users-ms    # k8s target: deployment | service | pod | podSelector
         port: 8080              # container port to forward
         localPort: 8100         # local port exposed on 127.0.0.1
+        env:
+          USERS_URL: 'http://{HOST}:{PORT}'
+          USERS_HOST: '{HOST}'
+          USERS_PORT: '{PORT}'
       resources-ms:
         deployment: resources-ms
         port: 8080
@@ -101,19 +105,18 @@ export function buildCli(): Command {
     .command('run')
     .description('start a service locally while port-forwarding its cluster dependencies')
     .argument('<service>', 'name of the service as defined in the config file')
-    .option('--no-env', 'do not add LK_* environment variables for forwarded dependencies')
     .option('-y, --yes', 'skip the kubeconfig context confirmation')
-    .action(async (service: string, opts: { env: boolean; yes: boolean }) => {
+    .action(async (service: string, opts: { yes: boolean }) => {
       const globalOpts = program.opts();
       await ok(async () => {
         const config = loadConfig(globalOpts.config, globalOpts);
-        return runLocal(config, service, { noEnv: opts.env === false, yes: !!opts.yes });
+        return runLocal(config, service, { yes: !!opts.yes });
       });
     });
 
   program
     .command('env')
-    .description("print LK_* environment variables for a service's forwarded dependencies")
+    .description("print environment variables configured for a service's forwarded dependencies")
     .argument('<service>', 'name of the service as defined in the config file')
     .action(async (service: string) => {
       await ok(async () => {

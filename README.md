@@ -20,12 +20,13 @@ lokube init                       # scaffold a lokube.yaml in the current dir
 lokube list                       # show services + their dependency forwards
 lokube run <service>              # forward deps, then run the local command
 lokube forward <service>          # only port-forward a service's dependencies
-lokube env <service>              # print LK_* env vars a service's deps inject
+lokube env <service>              # print configured env vars for a service's deps
 ```
 
 `run` and `forward` print the kubeconfig context and forwarding plan, then ask for confirmation. Pass `--yes` to skip it (required in non-interactive shells).
 
-Each forwarded dependency `foo-ms` injects `LK_FOO_MS_HOST` and `LK_FOO_MS_PORT` pointing at `127.0.0.1`.
+A dependency can declare an `env` mapping. In its values, `{HOST}` becomes `127.0.0.1` and `{PORT}` becomes
+the dependency's local forwarded port.
 
 ## Configuration
 
@@ -42,6 +43,10 @@ services:
         deployment: users-ms   # or service | pod | podSelector
         port: 8080
         localPort: 8100
+        env:
+          USERS_URL: 'http://{HOST}:{PORT}'
+          USERS_HOST: '{HOST}'
+          USERS_PORT: '{PORT}'
 ```
 
 See `examples/lokube.example.yaml` for the full, commented reference. Config is discovered in the current directory (`lokube.yaml`, `lokube.yml`, or `lokube.json`), or via `-c <path>`.

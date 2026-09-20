@@ -94,13 +94,15 @@ export async function cleanupHandles(handles: readonly PortForwardHandle[]): Pro
   }
 }
 
-/** Map each dependency to `LK_<KEY>_HOST/_PORT` env vars. */
+/** Expand declared dependency environment templates using the local forward values. */
 export function buildEnv(deps: readonly ResolvedDependency[]): Record<string, string> {
   const env: Record<string, string> = {};
   for (const dep of deps) {
-    const prefix = `LK_${dep.key.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
-    env[`${prefix}_HOST`] = '127.0.0.1';
-    env[`${prefix}_PORT`] = String(dep.localPort);
+    for (const [name, template] of Object.entries(dep.env ?? {})) {
+      env[name] = template.replace(/\{(HOST|PORT)\}/g, (_, placeholder: 'HOST' | 'PORT') =>
+        placeholder === 'HOST' ? '127.0.0.1' : String(dep.localPort),
+      );
+    }
   }
   return env;
 }
@@ -126,13 +128,13 @@ function waitChild(child?: ChildProcess): Promise<{ signal?: NodeJS.Signals | nu
 }
 
 /** Forward the service deps, run it locally, tear everything down on exit. */
-export async function runLocal(config: ResolvedConfig, service: string, opts: { noEnv?: boolean; yes?: boolean } = {}): Promise<number> {
+export async function runLocal(config: ResolvedConfig, service: string, opts: { yes?: boolean } = {}): Promise<number> {
   const svc = getService(config, service);
   if (!svc.command) throw new Error(`service "${service}" has no "command" configured to run locally`);
 
   const cwd = resolveServiceDir(config, service, svc.dir);
   const handles = await forwardService(config, service, opts.yes);
-  const env = opts.noEnv ? {} : buildEnv(svc.dependencies);
+  const env = buildEnv(svc.dependencies);
 
   log.info(`running "${svc.command}"${cwd ? ` in ${cwd}` : ''}`);
   const child = spawn(svc.command, {

@@ -53,6 +53,14 @@ services:
         # Optional: namespace override for THIS dependency.
         # namespace: somenamespace
 
+        # Optional environment variables for the local command. No variables
+        # are injected unless declared here. Use {HOST} and {PORT} as
+        # placeholders for 127.0.0.1 and this dependency's localPort.
+        env:
+          USERS_URL: 'http://{HOST}:{PORT}'
+          USERS_HOST: '{HOST}'
+          USERS_PORT: '{PORT}'
+
       resources-ms:
         deployment: resources-ms
         port: 8080
