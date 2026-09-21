@@ -3,7 +3,7 @@ import { statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { KubeForwarder, type PortForwardHandle } from './kube.js';
-import { log } from './logger.js';
+import { errMsg, log } from './logger.js';
 import type { ResolvedConfig, ResolvedDependency, ResolvedService } from './types.js';
 
 export function getService(config: ResolvedConfig, service: string): ResolvedService {
@@ -142,6 +142,10 @@ export async function runLocal(config: ResolvedConfig, service: string, opts: { 
     cwd,
     env: { ...(process.env as Record<string, string>), ...env },
     stdio: 'inherit',
+  });
+
+  child.on('error', (err) => {
+    log.error('Failed to start subprocess: ' + errMsg(err));
   });
 
   const { signal, code } = await waitChild(child);

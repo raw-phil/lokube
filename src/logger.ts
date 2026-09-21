@@ -21,10 +21,12 @@ function paint(text: string, code: keyof typeof codes, dest: NodeJS.WriteStream)
   return useColor(dest) ? `${codes[code]}${text}${codes.reset}` : text;
 }
 
+const PREFIX = '[lokube]';
+
 function write(channel: 'stdout' | 'stderr', level: Level, args: unknown[]): void {
   const dest = channel === 'stdout' ? process.stdout : process.stderr;
   const msg = args.map((a) => (typeof a === 'string' ? a : (a instanceof Error ? a.message : JSON.stringify(a)))).join(' ');
-  dest.write(`${paint(`[${level}]`, levelStyle[level], dest)} ${msg}\n`);
+  dest.write(`${paint(`${PREFIX} [${level}]`, levelStyle[level], dest)} ${msg}\n`);
 }
 
 export const log = {

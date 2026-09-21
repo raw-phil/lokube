@@ -101,11 +101,11 @@ export class KubeForwarder {
     const ports = [dep.port];
     switch (dep.kind) {
       case 'deployment':
-        return this.portForward.portForwardDeployment(dep.namespace, dep.target, ports, output, process.stderr, input);
+        return this.portForward.portForwardDeployment(dep.namespace, dep.target, ports, output, this.pfErrors, input);
       case 'service':
-        return this.portForward.portForwardService(dep.namespace, dep.target, ports, output, process.stderr, input);
+        return this.portForward.portForwardService(dep.namespace, dep.target, ports, output, this.pfErrors, input);
       case 'pod':
-        return this.portForward.portForward(dep.namespace, dep.target, ports, output, process.stderr, input);
+        return this.portForward.portForward(dep.namespace, dep.target, ports, output, this.pfErrors, input);
       case 'podSelector': {
         const list = await this.config.makeApiClient(CoreV1Api).listNamespacedPod({
           namespace: dep.namespace,
@@ -115,8 +115,27 @@ export class KubeForwarder {
           pod.status?.conditions?.some((c) => c.type === 'Ready' && c.status === 'True'),
         )?.metadata?.name;
         if (!name) throw new Error(`no ready pod matched "${dep.target}" in namespace ${dep.namespace}`);
-        return this.portForward.portForward(dep.namespace, name, ports, output, process.stderr, input);
+        return this.portForward.portForward(dep.namespace, name, ports, output, this.pfErrors, input);
       }
     }
   }
+
+  private pfErrors = new Writable({
+    write(
+      chunk: Buffer,
+      _encoding: BufferEncoding,
+      callback: (error?: Error | null) => void
+    ) {
+      try {
+
+        if (chunk.length > 0) {
+          log.error(chunk.toString());
+        }
+
+        callback();
+      } catch (err) {
+        callback(err as Error);
+      }
+    }
+  });
 }
