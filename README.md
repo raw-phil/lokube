@@ -1,5 +1,9 @@
 # lokube
 
+[![npm version](https://img.shields.io/npm/v/lokube)](https://www.npmjs.com/package/lokube)
+[![MIT license](https://img.shields.io/npm/l/lokube)](https://github.com/raw-phil/lokube/blob/main/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/lokube)](https://www.npmjs.com/package/lokube)
+
 Test Kubernetes microservices locally. `lokube` starts a service's local command and opens TCP port-forwards to its cluster dependencies via the Kubernetes API — no `kubectl` binary required.
 
 ## Install
